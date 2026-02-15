@@ -25,15 +25,9 @@ export function LinkPartnerForm({
     e.preventDefault();
     setLoading(true);
     try {
-      const result = await linkPartnerByEmail(myUid, email);
-      if (result === "linked") {
-        toast.success("Partner linked.");
-        onLinked();
-        setEmail("");
-      } else {
-        toast.success("Invite sent. They can accept when they sign in.");
-        setEmail("");
-      }
+      await linkPartnerByEmail(myUid, email);
+      toast.success("Invite sent. Your partner will see it when they sign in and can accept to link.");
+      setEmail("");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Something went wrong.");
     } finally {
@@ -65,7 +59,7 @@ export function LinkPartnerForm({
         {loading ? "Sending..." : "Link partner"}
       </Button>
       <p className="text-xs text-muted-foreground">
-        If they have an account, you&apos;ll be linked immediately. Otherwise they&apos;ll get an invite when they sign up with that email.
+        An invite will be sent. When your partner signs in with that email, they&apos;ll see the invite and can accept to link with you.
       </p>
     </form>
   );

@@ -6,7 +6,6 @@ import {
   setDoc,
   query,
   where,
-  limit,
   onSnapshot,
   type Unsubscribe,
   writeBatch,
@@ -36,6 +35,7 @@ export type InviteDoc = {
   fromUserId: string;
   toUserEmail: string;
   status: "pending" | "accepted" | "rejected";
+  acceptorUid?: string; // set when accepted (so inviter can update their partnerId)
   createdAt: Timestamp;
 };
 
@@ -78,6 +78,10 @@ export async function updateUserTaskName(uid: string, taskName: string) {
     { taskName },
     { merge: true }
   );
+}
+
+export async function updateUserPartnerId(uid: string, partnerId: string) {
+  await setDoc(userRef(uid), { partnerId }, { merge: true });
 }
 
 export async function setCompletion(userId: string, date: string) {
@@ -175,43 +179,36 @@ export async function getPendingInvitesForEmail(email: string): Promise<InviteDo
   return snap.docs.map((d) => d.data() as InviteDoc);
 }
 
+/** Acceptor updates their own doc and the invite. Inviter updates their doc via listener. */
 export async function acceptInvite(invite: InviteDoc, acceptorUid: string): Promise<void> {
   const batch = writeBatch(getDb());
-  const fromRef = userRef(invite.fromUserId);
-  const fromSnap = await getDoc(fromRef);
-  if (!fromSnap.exists()) throw new Error("Inviter user not found");
-
   const toRef = userRef(acceptorUid);
-
-  batch.update(fromRef, { partnerId: acceptorUid });
   batch.update(toRef, { partnerId: invite.fromUserId });
-  batch.update(inviteRef(invite.id), { status: "accepted" });
+  batch.update(inviteRef(invite.id), { status: "accepted", acceptorUid });
   await batch.commit();
 }
 
-export async function linkPartnerByEmail(myUid: string, partnerEmail: string): Promise<"invited" | "linked"> {
+/** Subscribe to invites you sent that were accepted; when one appears, set your partnerId. */
+export function subscribeAcceptedInvitesFromMe(
+  myUid: string,
+  onAccepted: (partnerUid: string) => void
+): Unsubscribe {
+  const q = query(
+    collection(getDb(), INVITES),
+    where("fromUserId", "==", myUid),
+    where("status", "==", "accepted")
+  );
+  return onSnapshot(q, (snap) => {
+    for (const d of snap.docs) {
+      const data = d.data() as InviteDoc & { acceptorUid?: string };
+      if (data.acceptorUid) onAccepted(data.acceptorUid);
+    }
+  });
+}
+
+/** Send a partner invite by email. Partner sees it when they sign in and can accept to link. */
+export async function linkPartnerByEmail(myUid: string, partnerEmail: string): Promise<void> {
   const normalized = partnerEmail.toLowerCase().trim();
   if (!normalized) throw new Error("Please enter an email.");
-
-  const usersSnap = await getDocs(
-    query(collection(getDb(), USERS), where("email", "==", normalized), limit(1))
-  );
-  if (usersSnap.empty) {
-    await createInvite(myUid, normalized);
-    return "invited";
-  }
-
-  const partnerUid = usersSnap.docs[0].id;
-  if (partnerUid === myUid) throw new Error("You cannot link with yourself.");
-
-  const partnerData = usersSnap.docs[0].data() as UserDoc;
-  if (partnerData.partnerId && partnerData.partnerId !== myUid) {
-    throw new Error("That user is already linked with another partner.");
-  }
-
-  const batch = writeBatch(getDb());
-  batch.update(userRef(myUid), { partnerId: partnerUid });
-  batch.update(userRef(partnerUid), { partnerId: myUid });
-  await batch.commit();
-  return "linked";
+  await createInvite(myUid, normalized);
 }

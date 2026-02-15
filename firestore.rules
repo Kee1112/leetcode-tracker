@@ -7,8 +7,12 @@ service cloud.firestore {
     function isOwner(uid) {
       return isSignedIn() && request.auth.uid == uid;
     }
+    // Safe: return partner's uid or null if user doc missing or no partner
     function getPartnerId(uid) {
-      return get(/databases/$(database)/documents/users/$(uid)).data.partnerId;
+      let u = get(/databases/$(database)/documents/users/$(uid));
+      return u != null && u.data != null && 'partnerId' in u.data
+        ? u.data.partnerId
+        : null;
     }
 
     match /users/{userId} {
@@ -26,7 +30,10 @@ service cloud.firestore {
 
     match /invites/{inviteId} {
       allow create: if isSignedIn() && request.resource.data.fromUserId == request.auth.uid;
-      allow read: if isSignedIn() && resource.data.toUserEmail == request.auth.token.email;
+      allow read: if isSignedIn() && (
+        resource.data.toUserEmail == request.auth.token.email ||
+        resource.data.fromUserId == request.auth.uid
+      );
       allow update: if isSignedIn() && resource.data.toUserEmail == request.auth.token.email;
     }
   }

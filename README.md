@@ -42,6 +42,7 @@ Stay accountable with a partner. Set one daily task (e.g. Leetcode, Exercise, Re
    - In Firestore > Indexes, create composite indexes (or deploy via Firebase CLI):
      - Collection `completions`: fields `userId` (Ascending), `date` (Ascending).
      - Collection `invites`: fields `toUserEmail` (Ascending), `status` (Ascending).
+     - Collection `invites`: fields `fromUserId` (Ascending), `status` (Ascending).
 
 5. **Run the app**
 
@@ -56,3 +57,13 @@ Stay accountable with a partner. Set one daily task (e.g. Leetcode, Exercise, Re
 - **Today:** One daily task; “Mark done today” records completion. Partner’s completion for today is shown and triggers an in-app toast.
 - **Calendar:** Green = completed that day; white = not completed.
 - **Settings:** Edit your task name; link partner by email (instant if they have an account, or invite if they sign up later with that email).
+
+## Troubleshooting
+
+- **"Server responded with status 404" in console**  
+  Open DevTools → Network tab, find the request that returns 404.
+  - If it's **favicon/icon** – the app now includes `app/icon.svg`; restart the dev server if you still see it.
+  - If the URL is under **firebaseapp.com** or **googleapis.com** – your Firebase config in `.env.local` is wrong. Use the exact values from Firebase Console → Project settings → Your apps (e.g. `authDomain` must be `your-project-id.firebaseapp.com`, no typos or extra spaces).
+
+- **"Missing or insufficient permissions"**  
+  Deploy the latest `firestore.rules` (see step 4 above) and ensure the composite indexes exist for `completions` and `invites`.

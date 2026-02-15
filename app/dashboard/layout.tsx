@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { AuthGuard } from "@/components/AuthGuard";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAcceptedInvitesSync } from "@/hooks/useAcceptedInvitesSync";
 import { LogOut, LayoutDashboard, Calendar, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -15,7 +16,13 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { signOut } = useAuth();
+  const { user, userDoc, signOut, refreshUserDoc } = useAuth();
+
+  useAcceptedInvitesSync(
+    user?.uid ?? null,
+    !!userDoc?.partnerId,
+    refreshUserDoc
+  );
 
   async function handleSignOut() {
     await signOut();
