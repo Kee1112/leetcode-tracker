@@ -1,0 +1,33 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+    function getPartnerId(uid) {
+      return get(/databases/$(database)/documents/users/$(uid)).data.partnerId;
+    }
+
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+      allow read: if isSignedIn() && getPartnerId(request.auth.uid) == userId;
+    }
+
+    match /completions/{completionId} {
+      allow create, update: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow read: if isSignedIn() && (
+        resource.data.userId == request.auth.uid ||
+        getPartnerId(request.auth.uid) == resource.data.userId
+      );
+    }
+
+    match /invites/{inviteId} {
+      allow create: if isSignedIn() && request.resource.data.fromUserId == request.auth.uid;
+      allow read: if isSignedIn() && resource.data.toUserEmail == request.auth.token.email;
+      allow update: if isSignedIn() && resource.data.toUserEmail == request.auth.token.email;
+    }
+  }
+}
