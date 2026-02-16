@@ -5,6 +5,7 @@ import { format } from "date-fns";
 import { setCompletion } from "@/lib/firestore";
 import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
+import { toast } from "sonner";
 
 type Props = {
   userId: string;
@@ -27,7 +28,10 @@ export function MarkDoneButton({
     try {
       const today = format(new Date(), "yyyy-MM-dd");
       await setCompletion(userId, today);
+      toast.success("Marked done for today.");
       onCompleted();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to save.");
     } finally {
       setLoading(false);
     }

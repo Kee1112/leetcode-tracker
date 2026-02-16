@@ -64,8 +64,10 @@
 .react-calendar__tile--now {
   @apply bg-primary/20 font-semibold;
 }
-.react-calendar__tile--completed {
-  @apply bg-primary text-primary-foreground font-medium;
+.react-calendar__tile.react-calendar__tile--completed {
+  background: hsl(142 76% 36%) !important;
+  color: white !important;
+  font-weight: 600;
 }
 .react-calendar__tile:disabled {
   @apply opacity-50 cursor-not-allowed;

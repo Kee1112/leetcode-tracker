@@ -17,11 +17,10 @@ export function CalendarView({ userId }: Props) {
 
   function tileClassName({ date, view }: { date: Date; view: string }) {
     if (view !== "month") return "";
-    const key = format(date, "yyyy-MM-dd");
-    const isCompleted = completedDates.has(key);
-    return cn(
-      isCompleted && "react-calendar__tile--completed"
-    );
+    // Use date-fns format to ensure consistent YYYY-MM-DD format
+    const dateKey = format(date, "yyyy-MM-dd");
+    const isCompleted = completedDates.has(dateKey);
+    return cn(isCompleted && "react-calendar__tile--completed");
   }
 
   return (

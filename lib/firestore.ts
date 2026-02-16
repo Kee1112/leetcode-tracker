@@ -115,7 +115,37 @@ export function subscribeCompletionsInRange(
     const dates = new Set<string>();
     snap.docs.forEach((d) => {
       const data = d.data() as CompletionDoc;
-      if (data.date) dates.add(data.date);
+      if (data.date) {
+        dates.add(data.date);
+      } else {
+        const parts = d.id.split("_");
+        const idDate = parts[parts.length - 1];
+        if (idDate && /^\d{4}-\d{2}-\d{2}$/.test(idDate)) dates.add(idDate);
+      }
+    });
+    onData(dates);
+  });
+}
+
+export function subscribeAllCompletions(
+  userId: string,
+  onData: (dates: Set<string>) => void
+): Unsubscribe {
+  const q = query(
+    collection(getDb(), COMPLETIONS),
+    where("userId", "==", userId)
+  );
+  return onSnapshot(q, (snap) => {
+    const dates = new Set<string>();
+    snap.docs.forEach((d) => {
+      const data = d.data() as CompletionDoc;
+      if (data.date) {
+        dates.add(data.date);
+      } else {
+        const parts = d.id.split("_");
+        const idDate = parts[parts.length - 1];
+        if (idDate && /^\d{4}-\d{2}-\d{2}$/.test(idDate)) dates.add(idDate);
+      }
     });
     onData(dates);
   });

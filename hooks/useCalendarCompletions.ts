@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { format, startOfMonth, endOfMonth } from "date-fns";
-import { subscribeCompletionsInRange } from "@/lib/firestore";
+import { subscribeAllCompletions } from "@/lib/firestore";
 
 export function useCalendarCompletions(userId: string | null, month: Date) {
   const [dates, setDates] = useState<Set<string>>(new Set());
@@ -12,11 +11,10 @@ export function useCalendarCompletions(userId: string | null, month: Date) {
       setDates(new Set());
       return;
     }
-    const start = format(startOfMonth(month), "yyyy-MM-dd");
-    const end = format(endOfMonth(month), "yyyy-MM-dd");
-    const unsub = subscribeCompletionsInRange(userId, start, end, setDates);
+    // Fetch all completions so they show as green permanently across all months
+    const unsub = subscribeAllCompletions(userId, setDates);
     return () => unsub();
-  }, [userId, month.getTime()]);
+  }, [userId]);
 
   return dates;
 }
